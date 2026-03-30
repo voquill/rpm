@@ -24,20 +24,30 @@ if ! command -v dnf &>/dev/null && ! command -v zypper &>/dev/null; then
   exit 1
 fi
 
+if ! command -v curl &>/dev/null; then
+  echo "Error: curl not found. Please install curl first." >&2
+  exit 1
+fi
+
 REPO_BASE="https://voquill.github.io/rpm"
 GPG_KEY_URL="${REPO_BASE}/gpg-key.asc"
 
 echo "Adding Voquill RPM repository (${CHANNEL} channel)..."
 
-if command -v dnf &>/dev/null; then
-  sudo rpm --import "${GPG_KEY_URL}"
+sudo rpm --import "${GPG_KEY_URL}" || {
+  echo "Error: Failed to import the GPG signing key." >&2
+  echo "Please check your network connection and try again." >&2
+  exit 1
+}
 
+if command -v dnf &>/dev/null; then
   sudo tee /etc/yum.repos.d/voquill.repo > /dev/null << EOF
 [voquill-${CHANNEL}]
 name=Voquill Desktop (${CHANNEL})
 baseurl=${REPO_BASE}/packages/${CHANNEL}
 enabled=1
 gpgcheck=1
+repo_gpgcheck=1
 gpgkey=${GPG_KEY_URL}
 EOF
 
